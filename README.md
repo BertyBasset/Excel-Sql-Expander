@@ -50,11 +50,13 @@ Column references in templates are **case-sensitive** and must always be **upper
 ### Example in Context
 ```excel
 =ExpandTemplate("!INSERT !INTO log !VALUES (A, Aa, aA)")
+=ExpandTemplate("insert into log values (A, Aa, aA)")
 ```
 Input: `A=5`
 Output:
 ```excel
 INSERT INTO log VALUES (5, 5a, a5)
+insert into log values (5, 5a, a5)
 ```
 This behavior is intentional and forms part of the template language’s parsing rules.
 
