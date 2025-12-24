@@ -261,8 +261,15 @@ Private Function FormatValue(cellVal As Variant, prefix As String, escapeStyle A
     Dim result As String
     
     ' Handle empty/null values
+    If prefix = "~" Then
+        FormatValue = "''"
+        Exit Function
+    End If
+    
+    
+    
     If IsEmpty(cellVal) Or Trim(cellVal & "") = "" Then
-        If nullForEmpty Or prefix = "" Or prefix = "#" Or prefix = "$" Or prefix = "@" Or prefix = "?" Then
+        If nullForEmpty Or prefix = "#" Or prefix = "$" Or prefix = "@" Or prefix = "?" Then
             FormatValue = "NULL"
         Else ' prefix = "~"
             FormatValue = "''"
