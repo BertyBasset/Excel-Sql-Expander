@@ -307,7 +307,7 @@ This returns an array formula with 9 rows of INSERT statements.
 
 **Formula:**
 ```excel
-=ExpandTemplate("INSERT INTO users (name, age, email) VALUES ($A, B, $C);")
+=ExpandTemplate("!INSERT !INTO users (name, age, email) VALUES ($A, B, $C);")
 ```
 
 **Output:**
