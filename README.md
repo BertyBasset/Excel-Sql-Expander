@@ -298,7 +298,24 @@ This returns an array formula with 9 rows of INSERT statements.
 
 ## Complete Examples
 
-### Example 1: Simple User Insert
+### Example 1: Simple User Insert using lower case commands
+
+**Data:**
+| A (Name) | B (Age) | C (Email) |
+|----------|---------|-----------|
+| John | 25 | john@example.com |
+
+**Formula:**
+```excel
+=ExpandTemplate("insert into users (name, age, email) VALUES ($A, B, $C);")
+```
+
+**Output:**
+```sql
+insert into users (name, age, email) VALUES ('John', 25, 'john@example.com');
+```
+
+### Example 2: Simple User Insert using upper case commands with literal prefix
 
 **Data:**
 | A (Name) | B (Age) | C (Email) |
@@ -315,7 +332,9 @@ This returns an array formula with 9 rows of INSERT statements.
 INSERT INTO users (name, age, email) VALUES ('John', 25, 'john@example.com');
 ```
 
-### Example 2: Using SQL Functions with Literal Prefix
+
+
+### Example 3: Using SQL Functions with Literal Prefix
 
 **Data:**
 | A (Name) | B (Age) | C (Active) |
@@ -332,7 +351,7 @@ INSERT INTO users (name, age, email) VALUES ('John', 25, 'john@example.com');
 INSERT INTO users (name, age, created_at, active) VALUES ('Alice', 25, NOW(), 1);
 ```
 
-### Example 3: Handling NULLs and Quotes
+### Example 4: Handling NULLs and Quotes
 
 **Data:**
 | A (Name) | B (Middle) | C (Note) |
@@ -349,7 +368,7 @@ INSERT INTO users (name, age, created_at, active) VALUES ('Alice', 25, NOW(), 1)
 INSERT INTO contacts VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
 ```
 
-### Example 4: Date Formatting
+### Example 5: Date Formatting
 
 **Data:**
 | A (Event) | B (Date) | C (Time) |
@@ -366,7 +385,7 @@ INSERT INTO contacts VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
 INSERT INTO events (name, event_date) VALUES ('Meeting', '2024-03-15 00:00:00');
 ```
 
-### Example 5: Using Beyond Column Z
+### Example 6: Using Beyond Column Z
 
 **Data:**
 | A | B | ... | AA | AB | AC |
@@ -383,7 +402,7 @@ INSERT INTO events (name, event_date) VALUES ('Meeting', '2024-03-15 00:00:00');
 VALUES (1, 2, 27, 28, 29)
 ```
 
-### Example 6: Literal Text with Dynamic Values
+### Example 7: Literal Text with Dynamic Values
 
 **Formula:**
 ```excel
