@@ -16,7 +16,7 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
     
     re.Global = True
     ' Pattern: (prefix)(column) or (prefix){named_range}
-    re.Pattern = "([#$@!?~]?)([A-Z]{1,3}|{[A-Za-z_][A-Za-z0-9_]*})"
+    re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
     
     Dim ws As Worksheet
     Dim targetRow As Long
@@ -107,7 +107,7 @@ Private Function ExpandTemplateForRow(template As String, ws As Worksheet, targe
     Set re = CreateObject("VBScript.RegExp")
     
     re.Global = True
-    re.Pattern = "([#$@!?~]?)([A-Z]{1,3}|{[A-Za-z_][A-Za-z0-9_]*})"
+    re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
     
     Dim result As String
     result = template
