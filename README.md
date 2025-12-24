@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Enhanced SQL Template Expander is a VBA utility for Excel that generates SQL INSERT statements by replacing column references in template strings with actual cell values from your worksheet.
+The **Enhanced SQL Template Expander** is a VBA utility for Excel that parses and evaluates a small domain-specific language embedded in template strings, expanding column references, literals, and symbolic tokens into fully formed SQL INSERT statements using data from worksheet rows.
 
 ## Quick Start
 
