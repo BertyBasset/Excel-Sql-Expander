@@ -64,7 +64,7 @@ This behavior is intentional and forms part of the template language’s parsing
 ## Referencing Template Text in a separate cell
 
 It can often be useful to have the Template source in one cell, with the ExpandTemplate function being invoked on it from a different cell. Using this pattern, you can see both Template and expanded text at the same time. 
-Taking the original exanmple where cells are `A=John`, `B=25`, `C=5.5`  
+Taking the original example where cells are `A=John`, `B=25`, `C=5.5`  
 
 We can then put the template expression into a cell in column D - say D1 
 
