@@ -164,8 +164,9 @@ Output: `CURRENT_TIMESTAMP`
 
 The `!` prefix outputs the text **literally** without reading any cell values. This is useful for:
 - SQL function names: `!NOW()`, `!UUID()`, `!RAND()`
-- SQL keywords: `!DEFAULT`, `!NULL`, `!CURRENT_TIMESTAMP`
-- Column names in templates: `!user_id`, `!created_at`
+- SQL keywords: `!INSERT, !UPDATE, !DEFAULT`, `!NULL`, `!CURRENT_TIMESTAMP`
+
+**Note** Although you can always enter Sql function and keywords as lower case
 
 **Important:** `!` does NOT read cell values. Use it only for literal SQL text.
 
