@@ -34,7 +34,7 @@ Control how values are formatted using prefix characters before column letters:
 | `$` | String (force quotes) | `$A` | `123` | `'123'` |
 | `#` | Numeric (force) | `#A` | `'123'` | `123` |
 | `@` | Date/DateTime | `@A` | `2024-01-15` | `'2024-01-15 00:00:00'` |
-| `!` | Raw/Literal | `!A` | `NOW()` | `NOW()` |
+| `!` | Literal text | `!NOW` | (any value) | `NOW` |
 | `?` | Boolean | `?A` | `TRUE` | `1` |
 | `~` | Empty string | `~A` | (empty) | `''` |
 
@@ -51,6 +51,20 @@ When no prefix is used, the function respects Excel's cell formatting first:
 The prefix **always overrides** Excel's cell type.
 
 ### Examples by Prefix
+
+#### When A=1 (All Prefix Behaviors)
+
+Here's what happens with cell A containing the value `1`:
+
+| Formula | Output | Description |
+|---------|--------|-------------|
+| `=ExpandTemplate("A")` | `1` | Auto-detect (number) |
+| `=ExpandTemplate("$A")` | `'1'` | Force string with quotes |
+| `=ExpandTemplate("#A")` | `1` | Force numeric (unquoted) |
+| `=ExpandTemplate("@A")` | `NULL` | Date format (invalid date) |
+| `=ExpandTemplate("!A")` | `A` | Literal text "A" |
+| `=ExpandTemplate("?A")` | `1` | Boolean (non-zero = true) |
+| `=ExpandTemplate("~A")` | `'1'` | String (never NULL) |
 
 #### `$` - Force String
 ```excel
@@ -73,14 +87,42 @@ Output: `123, 456`
 Input: `A=2024-01-15`, `B=2024-12-25 14:30:00`  
 Output: `'2024-01-15 00:00:00', '2024-12-25 14:30:00'`
 
-#### `!` - Raw/Literal (SQL Functions)
+#### `!` - Literal Text (Column Names & SQL Keywords)
 ```excel
-=ExpandTemplate("$A, !B, !C")
+=ExpandTemplate("!NOW")
 ```
-Input: `A=John`, `B=NOW()`, `C=DEFAULT`  
-Output: `'John', NOW(), DEFAULT`
+Output: `NOW`
 
-Use for SQL functions, keywords, or any value that shouldn't be escaped or quoted.
+```excel
+=ExpandTemplate("!NOW()")
+```
+Output: `NOW()`
+
+```excel
+=ExpandTemplate("!DEFAULT")
+```
+Output: `DEFAULT`
+
+```excel
+=ExpandTemplate("!CURRENT_TIMESTAMP")
+```
+Output: `CURRENT_TIMESTAMP`
+
+The `!` prefix outputs the text **literally** without reading any cell values. This is useful for:
+- SQL function names: `!NOW()`, `!UUID()`, `!RAND()`
+- SQL keywords: `!DEFAULT`, `!NULL`, `!CURRENT_TIMESTAMP`
+- Column names in templates: `!user_id`, `!created_at`
+
+**Important:** `!` does NOT read cell values. Use it only for literal SQL text.
+
+**Special case - Mixed literal and values:**
+```excel
+=ExpandTemplate("!COALESCE( A, 0)")
+```
+Input: `A=5`  
+Output: `COALESCE( 5, 0)`
+
+When the literal text contains spaces followed by single capital letters (like ` A`), those letters are replaced with their cell values. Everything else remains literal.
 
 #### `?` - Boolean
 ```excel
@@ -102,10 +144,10 @@ By default, empty cells produce `NULL`. Use `~` to force empty string `''`.
 
 ## Multi-Column Support
 
-Supports column references from **A to ZZ** (676 columns):
+Supports column references from **A to ZZ** (702 columns):
 
 ```excel
-=ExpandTemplate("$A, $Z, $AA, $AB, $ZZ, $AAA")
+=ExpandTemplate("$A, $Z, $AA, $AB, $ZZ)
 ```
 
 ## Named Ranges
@@ -139,12 +181,16 @@ To force empty string instead, use `~` prefix or set optional parameter.
 
 The function automatically escapes special characters:
 
-| Character | Input | Output |
-|-----------|-------|--------|
-| Single quote | `O'Brien` | `O''Brien` |
+| Character | Input | Output (MySQL) |
+|-----------|-------|----------------|
+| Single quote | `O'Brien` | `O\'Brien` |
+| Double quote | `Say "Hi"` | `Say \"Hi\"` |
+| Backslash | `C:\path` | `C:\\path` |
 | Line feed (LF) | `Line1\nLine2` | `Line1\\nLine2` |
 | Carriage return (CR) | `Text\r` | `Text\\r` |
-| Tab | `Col1\tCol2` | `Col1\\t` |
+| Tab | `Col1\tCol2` | `Col1\\tCol2` |
+
+*Note: Escaping style depends on the `escapeStyle` parameter (MySQL, SQL, or PostgreSQL)*
 
 ## Advanced Features
 
@@ -170,8 +216,8 @@ Function signature:
 
 Supported styles:
 - `"MySQL"` (default) - MySQL backslash escaping: `\'`, `\"`, `\\`, `\n`, `\r`, `\t`, `\b`, `\0`
-- `"SQL"` - SQL Server / ANSI SQL: `''` for quotes, `\n`, `\r`, `\t`
-- `"PostgreSQL"` - PostgreSQL escaping: `''` for quotes, `\n`, `\r`, `\t`
+- `"SQL"` or `"SQLServer"` or `"ANSI"` - SQL Server / ANSI SQL: `''` for quotes, `\n`, `\r`, `\t`
+- `"PostgreSQL"` or `"Postgres"` - PostgreSQL escaping: `''` for quotes, `\n`, `\r`, `\t`
 
 ### Batch Processing Multiple Rows
 
@@ -212,21 +258,21 @@ This returns an array formula with 9 rows of INSERT statements.
 INSERT INTO users (name, age, email) VALUES ('John', 25, 'john@example.com');
 ```
 
-### Example 2: Mixed Types with SQL Functions
+### Example 2: Using SQL Functions with Literal Prefix
 
 **Data:**
-| A (Name) | B (Created) | C (Status) |
-|----------|-------------|------------|
-| Alice | NOW() | 1 |
+| A (Name) | B (Age) | C (Active) |
+|----------|---------|------------|
+| Alice | 25 | 1 |
 
 **Formula:**
 ```excel
-=ExpandTemplate("INSERT INTO users (name, created_at, active) VALUES ($A, !B, ?C);")
+=ExpandTemplate("INSERT INTO users (name, age, created_at, active) VALUES ($A, B, !NOW(), ?C);")
 ```
 
 **Output:**
 ```sql
-INSERT INTO users (name, created_at, active) VALUES ('Alice', NOW(), 1);
+INSERT INTO users (name, age, created_at, active) VALUES ('Alice', 25, NOW(), 1);
 ```
 
 ### Example 3: Handling NULLs and Quotes
@@ -243,7 +289,7 @@ INSERT INTO users (name, created_at, active) VALUES ('Alice', NOW(), 1);
 
 **Output:**
 ```sql
-INSERT INTO contacts VALUES ('O''Brien', NULL, 'Said "Hi"');
+INSERT INTO contacts VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
 ```
 
 ### Example 4: Date Formatting
@@ -280,6 +326,18 @@ INSERT INTO events (name, event_date) VALUES ('Meeting', '2024-03-15 00:00:00');
 VALUES (1, 2, 27, 28, 29)
 ```
 
+### Example 6: Literal Text with Dynamic Values
+
+**Formula:**
+```excel
+=ExpandTemplate("!COALESCE( A, !DEFAULT)")
+```
+
+**Input:** `A=100`  
+**Output:** `COALESCE( 100, DEFAULT)`
+
+The space before `A` causes it to be replaced with the cell value, while `DEFAULT` (preceded by `!`) remains literal.
+
 ## Tips & Best Practices
 
 ### 1. **Test with Small Datasets First**
@@ -314,15 +372,22 @@ Example:
 =ExpandTemplate("$A, B", TRUE, "SQL")  ' For SQL Server
 ```
 
+### 7. **Understanding the `!` Literal Prefix**
+- Use `!` for SQL keywords and function names: `!NOW()`, `!DEFAULT`, `!CURRENT_TIMESTAMP`
+- Do NOT use `!A` expecting it to read cell A - it will output literal "A"
+- For mixing literals with values, use space separation: `!COALESCE( A, 0)` where A gets replaced
+
 ## Troubleshooting
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `#REF!` | Invalid column reference | Check column letter is valid (A-ZZZ) |
+| `#REF!` | Invalid column reference | Check column letter is valid (A-ZZ) |
 | `#ERROR:` | Formula syntax error | Verify template string format |
 | Missing quotes | Wrong prefix used | Use `$` prefix for strings |
 | `NULL` instead of value | Cell is empty | Check source cell has value |
 | Wrong date format | Cell not formatted as date | Format cell as date or use `@` prefix |
+| Literal `A` instead of value | Used `!A` prefix | Remove `!` to read cell value: use `A` instead |
+| Function name quoted | Missing `!` prefix | Use `!NOW()` not `NOW()` |
 
 ## Installation
 
