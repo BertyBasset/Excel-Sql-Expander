@@ -9,13 +9,16 @@ Option Explicit
 
 ' Main function: Expands template with values from current row
 Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = True, Optional escapeStyle As String = "MySQL") As String
+    Application.Volatile
     On Error GoTo ErrorHandler
     
     Dim re As Object
     Set re = CreateObject("VBScript.RegExp")
     
     re.Global = True
-    re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
+    re.Pattern = "(![^, ]+|[#$@?~]?([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*}))"
+
+
 
     
     Dim ws As Worksheet
@@ -43,8 +46,21 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
         Dim cellVal As Variant
         Dim replacement As String
         
-        prefix = matches(i).SubMatches(0)
-        colRef = matches(i).SubMatches(1)
+        Dim token As String
+        token = matches(i).Value
+        
+        Dim firstChar As String
+        firstChar = Left(token, 1)
+        
+        Select Case firstChar
+            Case "!", "#", "$", "@", "?", "~"
+                prefix = firstChar
+                colRef = Mid(token, 2)
+            Case Else
+                prefix = ""          ' NO prefix
+                colRef = token       ' FULL token is the column
+        End Select
+
 
         ' Handle literal prefix "!" - output literal text with optional cell value substitution
         If prefix = "!" Then
@@ -179,7 +195,8 @@ Private Function ExpandTemplateForRow(template As String, ws As Worksheet, targe
     Set re = CreateObject("VBScript.RegExp")
     
     re.Global = True
-    re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
+    re.Pattern = "(![^, ]+|[#$@?~]?([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*}))"
+
 
     
     Dim result As String
@@ -196,8 +213,21 @@ Private Function ExpandTemplateForRow(template As String, ws As Worksheet, targe
         Dim cellVal As Variant
         Dim replacement As String
         
-        prefix = matches(i).SubMatches(0)
-        colRef = matches(i).SubMatches(1)
+        Dim token As String
+        token = matches(i).Value
+        
+        Dim firstChar As String
+        firstChar = Left(token, 1)
+        
+        Select Case firstChar
+            Case "!", "#", "$", "@", "?", "~"
+                prefix = firstChar
+                colRef = Mid(token, 2)
+            Case Else
+                prefix = ""          ' NO prefix
+                colRef = token       ' FULL token is the column
+        End Select
+
         
         ' Handle literal prefix "!" - output literal text with optional cell value substitution
         If prefix = "!" Then
