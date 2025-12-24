@@ -420,7 +420,7 @@ The space before `A` causes it to be replaced with the cell value, while `DEFAUL
 Build your template on a few rows before applying to thousands.
 
 ### 2. **Use Named Ranges for Clarity**
-Instead of `$A, $B, $C`, use `{FirstName}, {LastName}, {Email}`
+Instead of `A, B, C`, use `{FirstName}, {LastName}, {Email}`
 
 ### 3. **Combine with Excel Formulas**
 ```excel
