@@ -118,7 +118,7 @@ Here's what happens with cell A containing the value `1`:
 | `=ExpandTemplate("@A")` | `NULL` | Date format (invalid date) |
 | `=ExpandTemplate("!A")` | `A` | Literal text "A" |
 | `=ExpandTemplate("?A")` | `1` | Boolean (non-zero = true) |
-| `=ExpandTemplate("~A")` | `'1'` | String (never NULL) |
+| `=ExpandTemplate("~A")` | `1` | Number (never NULL) |
 
 #### `$` - Force String
 ```excel
