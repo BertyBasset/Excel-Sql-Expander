@@ -433,7 +433,7 @@ This tool doesn't prevent SQL injection. Ensure source data is trusted or use pa
 
 ### 5. **Performance with Large Datasets**
 For thousands of rows, consider:
-- Using `ExpandTemplateRange` for batch processing
+- Using `ExpandTemplateRange` for batch processing 
 - Copying results to a new sheet
 - Running as a macro rather than live formulas
 
@@ -463,7 +463,7 @@ Example:
 | `NULL` instead of value | Cell is empty | Check source cell has value |
 | Wrong date format | Cell not formatted as date | Format cell as date or use `@` prefix |
 | Literal `A` instead of value | Used `!A` prefix | Remove `!` to read cell value: use `A` instead |
-| Function name quoted | Missing `!` prefix | Use `!NOW()` not `NOW()` |
+| Function name mangled | Missing `!` prefix | Use `!NOW()` not `NOW()` |
 
 ## Installation
 
