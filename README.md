@@ -19,7 +19,7 @@ Output: `'John', 25, 5.5`
 ### Generate Complete INSERT Statement
 
 ```excel
-=ExpandTemplate("INSERT INTO users (name, age, score) VALUES ($A, B, C);")
+=ExpandTemplate("!INSERT !INTO users (name, age, score) !VALUES ($A, B, C);")
 ```
 
 Output: `INSERT INTO users (name, age, score) VALUES ('John', 25, 5.5);`
