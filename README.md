@@ -24,6 +24,40 @@ Output: `'John', 25, 5.5`
 
 Output: `INSERT INTO users (name, age, score) VALUES ('John', 25, 5.5);`
 
+## Column Reference Case Sensitivity
+Column references in templates are **case-sensitive** and must always be **uppercase**.
+
+### Rules
+- **Uppercase letters** (A–ZZ) are treated as **column references**
+- **Lowercase letters** are treated as **literal text**
+- Mixed-case sequences are parsed left-to-right
+
+### Examples
+| Template | Meaning                | Result (A=1)      |
+| -------- | ---------------------- | ----------------- |
+| `A`      | Column A               | `1`               |
+| `a`      | Literal text           | `a`               |
+| `AA`     | Column AA              | *(value from AA)* |
+| `Aa`     | Column A + literal `a` | `1a`              |
+| `aA`     | Literal `a` + column A | `a1`              |
+
+### Practical Implications
+- Always use uppercase column references (`A`, `B`, `AA`, `ZZ`)
+- Lowercase letters are safe to use inside SQL text, identifiers, and literals
+- If using upper case literals, prefix with literal marker `!`, or use lower case literals (which do not need `!` marker)
+- This design avoids ambiguity between column references and literal text in SQL templates
+
+### Example in Context
+```excel
+=ExpandTemplate("!INSERT !INTO log !VALUES (A, Aa, aA)")
+```
+Input: `A=5`
+Output:
+```excel
+INSERT INTO log VALUES (5, 5a, a5)
+```
+This behavior is intentional and forms part of the template language’s parsing rules.
+
 ## Type Prefixes
 
 Control how values are formatted using prefix characters before column letters:
