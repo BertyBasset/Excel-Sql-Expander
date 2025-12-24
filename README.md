@@ -343,7 +343,7 @@ INSERT INTO users (name, age, email) VALUES ('John', 25, 'john@example.com');
 
 **Formula:**
 ```excel
-=ExpandTemplate("INSERT INTO users (name, age, created_at, active) VALUES ($A, B, !NOW(), ?C);")
+=ExpandTemplate("!INSERT !INTO users (name, age, created_at, active) !VALUES ($A, B, !NOW(), ?C);")
 ```
 
 **Output:**
