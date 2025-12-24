@@ -424,7 +424,7 @@ Instead of `A, B, C`, use `{FirstName}, {LastName}, {Email}`
 
 ### 3. **Combine with Excel Formulas**
 ```excel
-=ExpandTemplate("INSERT INTO users VALUES ($A, B, @C);") & CHAR(10)
+=ExpandTemplate("!INSERT !INTO users !VALUES ($A, B, @C);") & CHAR(10)
 ```
 Adds a newline after each statement.
 
