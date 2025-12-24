@@ -307,12 +307,12 @@ This returns an array formula with 9 rows of INSERT statements.
 
 **Formula:**
 ```excel
-=ExpandTemplate("insert into users (name, age, email) VALUES ($A, B, $C);")
+=ExpandTemplate("insert into users (name, age, email) values ($A, B, $C);")
 ```
 
 **Output:**
 ```sql
-insert into users (name, age, email) VALUES ('John', 25, 'john@example.com');
+insert into users (name, age, email) values ('John', 25, 'john@example.com');
 ```
 
 ### Example 2: Simple User Insert using upper case commands with literal prefix
@@ -324,7 +324,7 @@ insert into users (name, age, email) VALUES ('John', 25, 'john@example.com');
 
 **Formula:**
 ```excel
-=ExpandTemplate("!INSERT !INTO users (name, age, email) VALUES ($A, B, $C);")
+=ExpandTemplate("!INSERT !INTO users (name, age, email) !VALUES ($A, B, $C);")
 ```
 
 **Output:**
