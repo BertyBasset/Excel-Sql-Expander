@@ -365,7 +365,7 @@ INSERT INTO users (name, age, created_at, active) VALUES ('Alice', 25, NOW(), 1)
 
 **Output:**
 ```sql
-INSERT INTO contacts VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
+!INSERT !INTO contacts !VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
 ```
 
 ### Example 5: Date Formatting
@@ -377,7 +377,7 @@ INSERT INTO contacts VALUES ('O\'Brien', NULL, 'Said \"Hi\"');
 
 **Formula:**
 ```excel
-=ExpandTemplate("INSERT INTO events (name, event_date) VALUES ($A, @B);")
+=ExpandTemplate("!INSERT !INTO events (name, event_date) !VALUES ($A, @B);")
 ```
 
 **Output:**
@@ -394,7 +394,7 @@ INSERT INTO events (name, event_date) VALUES ('Meeting', '2024-03-15 00:00:00');
 
 **Formula:**
 ```excel
-=ExpandTemplate("VALUES (A, B, AA, AB, AC)")
+=ExpandTemplate("!VALUES (A, B, AA, AB, AC)")
 ```
 
 **Output:**
