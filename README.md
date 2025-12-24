@@ -219,6 +219,9 @@ If you've named cells:
 
 The function will read from those named ranges.
 
+Assigning a name to a range of cells in a column allows you to reference that name across all rows in the range, making formulas and functions easier to read and maintain.
+
+
 ## NULL Handling
 
 Empty or blank cells automatically become `NULL`:
