@@ -53,6 +53,7 @@ Column references in templates are **case-sensitive** and must always be **upper
 =ExpandTemplate("insert into log values (A, Aa, aA)")
 ```
 Input: `A=5`
+
 Output:
 ```excel
 INSERT INTO log VALUES (5, 5a, a5)
