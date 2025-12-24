@@ -61,6 +61,18 @@ insert into log values (5, 5a, a5)
 ```
 This behavior is intentional and forms part of the template language’s parsing rules.
 
+## Referencing Template Text in a separate cell
+
+It can often be useful to have the Template source in one cell, with the ExpandTemplate function being invoked on it from a different cell. Using this patter, you can see both Template and expanded text at the same time. 
+Taking the original exanmple where cells are `A=John`, `B=25`, `C=5.5`  
+
+We can then put the template expression into a cell in column D - say D1 
+`$A, B, C`
+In E1, we can refer to this using
+`=ExpandTemplate(D1)`
+E1 will then display the expanded output
+`'John', 25, 5.5`
+
 ## Type Prefixes
 
 Control how values are formatted using prefix characters before column letters:
