@@ -2,7 +2,7 @@
 ' Enhanced SQL Template Expander for Excel VBA
 ' ========================================================================
 ' Builds SQL INSERT queries by expanding template strings with cell values
-' Supports multiple column formats (A-ZZZ), type prefixes, and advanced features
+' Supports multiple column formats (A-ZZ), type prefixes, and advanced features
 ' ========================================================================
 
 Option Explicit
@@ -15,8 +15,8 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
     Set re = CreateObject("VBScript.RegExp")
     
     re.Global = True
-    ' Pattern: (prefix)(column) or (prefix){named_range}
     re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
+
     
     Dim ws As Worksheet
     Dim targetRow As Long
@@ -45,9 +45,11 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
         
         prefix = matches(i).SubMatches(0)
         colRef = matches(i).SubMatches(1)
-        
-        ' Handle named ranges vs column letters
-        If Left(colRef, 1) = "{" Then
+
+        ' Handle literal prefix "!" - output literal text with optional cell value substitution
+        If prefix = "!" Then
+            replacement = ProcessLiteralTemplate(colRef, ws, targetRow)
+        ElseIf Left(colRef, 1) = "{" Then
             colNum = GetNamedRangeColumn(Mid(colRef, 2, Len(colRef) - 2), ws)
         Else
             If Not colCache.Exists(colRef) Then
@@ -56,11 +58,14 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
             colNum = colCache(colRef)
         End If
         
-        If colNum = 0 Then
-            replacement = "#REF!"
-        Else
-            cellVal = ws.Cells(targetRow, colNum).Value
-            replacement = FormatValue(cellVal, prefix, escapeStyle, nullForEmpty, ws.Cells(targetRow, colNum))
+        ' Only process non-literal prefixes
+        If prefix <> "!" Then
+            If colNum = 0 Then
+                replacement = "#REF!"
+            Else
+                cellVal = ws.Cells(targetRow, colNum).Value
+                replacement = FormatValue(cellVal, prefix, escapeStyle, nullForEmpty, ws.Cells(targetRow, colNum))
+            End If
         End If
         
         ' Replace in result string
@@ -74,6 +79,73 @@ Function ExpandTemplate(template As String, Optional nullForEmpty As Boolean = T
     
 ErrorHandler:
     ExpandTemplate = "#ERROR: " & Err.Description
+End Function
+
+' Helper: Process literal template with optional cell value substitution
+Private Function ProcessLiteralTemplate(template As String, ws As Worksheet, targetRow As Long) As String
+    ' If template is just a column reference (like "A", "AB", "ABC"), return it as literal
+    ' Otherwise, replace standalone single capital letters after spaces with their cell values
+    
+    Dim result As String
+    result = template
+    
+    ' Check if the entire template is just uppercase letters (column reference)
+    Dim allAlpha As Boolean
+    allAlpha = True
+    Dim i As Long
+    
+    If Len(template) > 0 And Len(template) <= 3 Then
+        For i = 1 To Len(template)
+            If Not Mid(template, i, 1) Like "[A-Z]" Then
+                allAlpha = False
+                Exit For
+            End If
+        Next i
+        If allAlpha Then
+            ProcessLiteralTemplate = template
+            Exit Function
+        End If
+    End If
+    
+    ' For templates with spaces, manually find and replace single letters after spaces
+    If InStr(template, " ") > 0 Then
+        For i = 2 To Len(template) ' Start at 2 since we need a preceding character
+            ' Check if current char is uppercase letter, preceded by space, followed by space or end
+            If Mid(template, i, 1) Like "[A-Z]" And Mid(template, i - 1, 1) = " " Then
+                Dim nextChar As String
+                If i < Len(template) Then
+                    nextChar = Mid(template, i + 1, 1)
+                Else
+                    nextChar = ""
+                End If
+                
+                ' If followed by space or end of string, replace it
+                If nextChar = " " Or nextChar = "" Then
+                    Dim colLetter As String
+                    Dim colNum As Long
+                    Dim cellVal As Variant
+                    
+                    colLetter = Mid(template, i, 1)
+                    colNum = ColumnLetterToNumber(colLetter)
+                    
+                    If colNum > 0 Then
+                        cellVal = ws.Cells(targetRow, colNum).Value
+                        If IsEmpty(cellVal) Then
+                            result = Left(result, i - 1) & Mid(result, i + 1)
+                            i = i - 1 ' Adjust position after deletion
+                        Else
+                            Dim replacement As String
+                            replacement = CStr(cellVal)
+                            result = Left(result, i - 1) & replacement & Mid(result, i + 1)
+                            i = i + Len(replacement) - 1 ' Adjust position after replacement
+                        End If
+                    End If
+                End If
+            End If
+        Next i
+    End If
+    
+    ProcessLiteralTemplate = result
 End Function
 
 ' Batch function: Expands template for multiple rows
@@ -108,6 +180,7 @@ Private Function ExpandTemplateForRow(template As String, ws As Worksheet, targe
     
     re.Global = True
     re.Pattern = "([#$@!?~]?)([A-Z]{1,2}|{[A-Za-z_][A-Za-z0-9_]*})"
+
     
     Dim result As String
     result = template
@@ -126,17 +199,23 @@ Private Function ExpandTemplateForRow(template As String, ws As Worksheet, targe
         prefix = matches(i).SubMatches(0)
         colRef = matches(i).SubMatches(1)
         
-        If Left(colRef, 1) = "{" Then
+        ' Handle literal prefix "!" - output literal text with optional cell value substitution
+        If prefix = "!" Then
+            replacement = ProcessLiteralTemplate(colRef, ws, targetRow)
+        ElseIf Left(colRef, 1) = "{" Then
             colNum = GetNamedRangeColumn(Mid(colRef, 2, Len(colRef) - 2), ws)
         Else
             colNum = ColumnLetterToNumber(colRef)
         End If
         
-        If colNum = 0 Then
-            replacement = "#REF!"
-        Else
-            cellVal = ws.Cells(targetRow, colNum).Value
-            replacement = FormatValue(cellVal, prefix, escapeStyle, nullForEmpty, ws.Cells(targetRow, colNum))
+        ' Only process non-literal prefixes
+        If prefix <> "!" Then
+            If colNum = 0 Then
+                replacement = "#REF!"
+            Else
+                cellVal = ws.Cells(targetRow, colNum).Value
+                replacement = FormatValue(cellVal, prefix, escapeStyle, nullForEmpty, ws.Cells(targetRow, colNum))
+            End If
         End If
         
         result = Left(result, matches(i).FirstIndex) & _
@@ -291,26 +370,30 @@ Private Function EscapeString(str As String, escapeStyle As String) As String
     EscapeString = result
 End Function
 
-' Helper: Convert column letter(s) to number (supports A-ZZZ)
+' Helper: Convert column letter(s) to number (supports A-ZZ)
 Private Function ColumnLetterToNumber(colLetter As String) As Long
-    On Error GoTo ErrorHandler
-    
     Dim result As Long
-    Dim i As Integer
-    Dim char As String
-    
+    Dim i As Long
+
+    ' Enforce A–ZZ only
+    If Len(colLetter) < 1 Or Len(colLetter) > 2 Then
+        ColumnLetterToNumber = 0
+        Exit Function
+    End If
+
     result = 0
     For i = 1 To Len(colLetter)
-        char = Mid(colLetter, i, 1)
-        result = result * 26 + (Asc(char) - Asc("A") + 1)
+        result = result * 26 + (Asc(Mid(colLetter, i, 1)) - Asc("A") + 1)
     Next i
-    
-    ColumnLetterToNumber = result
-    Exit Function
-    
-ErrorHandler:
-    ColumnLetterToNumber = 0
+
+    ' Final numeric guard (ZZ = 702)
+    If result < 1 Or result > 702 Then
+        ColumnLetterToNumber = 0
+    Else
+        ColumnLetterToNumber = result
+    End If
 End Function
+
 
 ' Helper: Get column number from named range
 Private Function GetNamedRangeColumn(rangeName As String, ws As Worksheet) As Long
