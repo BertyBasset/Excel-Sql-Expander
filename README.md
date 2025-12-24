@@ -248,7 +248,7 @@ The function automatically escapes special characters:
 | Carriage return (CR) | `Text\r` | `Text\\r` |
 | Tab | `Col1\tCol2` | `Col1\\tCol2` |
 
-*Note: Escaping style depends on the `escapeStyle` parameter (MySQL, SQL, or PostgreSQL)*
+*Note: Escaping style depends on the optional `escapeStyle` parameter (MySQL, SQL, or PostgreSQL)* Default is MySql
 
 ## Advanced Features
 
