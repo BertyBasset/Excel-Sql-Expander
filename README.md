@@ -102,7 +102,7 @@ By default, empty cells produce `NULL`. Use `~` to force empty string `''`.
 
 ## Multi-Column Support
 
-Supports column references from **A to ZZZ** (18,278 columns):
+Supports column references from **A to ZZ** (676 columns):
 
 ```excel
 =ExpandTemplate("$A, $Z, $AA, $AB, $ZZ, $AAA")
