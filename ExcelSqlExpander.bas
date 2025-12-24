@@ -261,7 +261,7 @@ Private Function FormatValue(cellVal As Variant, prefix As String, escapeStyle A
     Dim result As String
     
     ' Handle empty/null values
-    If prefix = "~" Then
+    If prefix = "~" And cellVal = "" Then
         FormatValue = "''"
         Exit Function
     End If
@@ -312,8 +312,6 @@ Private Function FormatValue(cellVal As Variant, prefix As String, escapeStyle A
                 result = "NULL"
             End If
             
-        Case "~"  ' Force empty string instead of NULL
-            result = "'" & escapedVal & "'"
             
         Case Else  ' Auto-detect based on Excel cell type
             result = AutoDetectFormat(cellVal, escapedVal, cell)
