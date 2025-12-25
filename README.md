@@ -88,7 +88,8 @@ Control how values are formatted using prefix characters before column letters:
 | `$` | String (force quotes) | `$A` | `123` | `'123'` |
 | `#` | Numeric (force) | `#A` | `'123'` | `123` |
 | `@` | Date/DateTime | `@A` | `2024-01-15` | `'2024-01-15 00:00:00'` |
-| `!` | Literal text | `!NOW` | (any value) | `NOW` |
+| `!` | The NOW problem | `NOW()` | (any value) | `NULLNULL()` |
+| `!` | Literal text | `!NOW()` | (any value) | `NOW()` |
 | `?` | Boolean | `?A` | `TRUE` | `1` |
 | `~` | Empty string | `~A` | (empty) | `''` |
 
