@@ -1,4 +1,7 @@
-# SQL Template Expander - Usage Guide
+# SQL & Json Template Expander - Usage Guide
+The Sql template expander has been augmented by a Json specific version dealing with escape and delmiters in a manner more appropriate for Json. Part 1 specified the full Sql template functionality. Part 2 concentrates mainly on the differences between the Json and Sql versions.
+
+# Part 1 - SQL Template Expander - Usage Guide
 
 ## Overview
 
@@ -482,3 +485,430 @@ Example:
 This is a utility function for Excel VBA. Modify and extend as needed for your use case.
 
 For questions or enhancements, refer to the inline code comments or extend the functions for your specific SQL dialect requirements.
+
+
+
+
+# Part 2 - JSON Template Expander - Usage Guide
+
+## Overview
+
+The **JSON Template Expander** is a VBA utility for Excel that parses and evaluates a small **domain-specific language** embedded in template strings, expanding column references, literals, and symbolic tokens into properly formatted JSON using data from worksheet rows.
+
+This guide focuses on the **differences from the SQL version**. For general usage patterns, column references, named ranges, and the literal prefix system, refer to the SQL Template Expander guide - those features work identically.
+
+## Quick Start
+
+### Basic Usage
+
+In any cell, use the formula:
+```excel
+=ExpandTemplateJson("""name"": $A, ""age"": B, ""score"": C")
+```
+
+If row contains: `A=John`, `B=25`, `C=5.5`  
+Output: `"name": "John", "age": 25, "score": 5.5`
+
+### Generate Complete JSON Object
+
+```excel
+=ExpandTemplateJson("{""name"": $A, ""age"": B, ""score"": C}")
+```
+
+Output: `{"name": "John", "age": 25, "score": 5.5}`
+
+**Note:** In Excel formulas, double quotes inside strings must be doubled: `""` represents a single `"` character.
+
+## Key Differences from SQL Version
+
+### 1. String Delimiters
+- **SQL**: Single quotes `'string'`
+- **JSON**: Double quotes `"string"`
+
+### 2. NULL Values
+- **SQL**: `NULL` (uppercase)
+- **JSON**: `null` (lowercase)
+
+### 3. Boolean Values
+- **SQL**: `1` and `0` (numeric)
+- **JSON**: `true` and `false` (lowercase, no quotes)
+
+### 4. Date/DateTime Format
+- **SQL**: `'2024-01-15 14:30:00'`
+- **JSON**: `"2024-01-15T14:30:00"` (ISO 8601 with T separator)
+
+### 5. Empty Strings
+- **SQL**: `''`
+- **JSON**: `""`
+
+### 6. Escape Sequences
+
+**JSON uses different escape rules:**
+
+| Character | Input | JSON Output |
+|-----------|-------|-------------|
+| Double quote | `Say "Hi"` | `Say \"Hi\"` |
+| Backslash | `C:\path` | `C:\\path` |
+| Forward slash | `path/file` | `path\/file` |
+| Line feed (LF) | (newline) | `\n` |
+| Carriage return (CR) | (CR) | `\r` |
+| Tab | (tab) | `\t` |
+| Backspace | (backspace) | `\b` |
+| Form feed | (form feed) | `\f` |
+| Control chars | (0x00-0x1F) | `\uXXXX` |
+
+**Note:** Single quotes do NOT need escaping in JSON (unlike SQL).
+
+### 7. No Escape Style Parameter
+
+The JSON version does NOT have an `escapeStyle` parameter since JSON has a single standard format.
+
+**Function signature:**
+```vba
+=ExpandTemplateJson(template, [nullForEmpty])
+```
+
+vs SQL version:
+```vba
+=ExpandTemplateSql(template, [nullForEmpty], [escapeStyle])
+```
+
+## Type Prefixes - JSON Behavior
+
+The same prefixes work, but output JSON-formatted values:
+
+| Prefix | Type | Example | Input: `A=123` | JSON Output |
+|--------|------|---------|----------------|-------------|
+| (none) | Auto-detect | `A` | `123` | `123` |
+| `$` | String (force quotes) | `$A` | `123` | `"123"` |
+| `#` | Numeric (force) | `#A` | `'123'` | `123` |
+| `@` | Date/DateTime | `@A` | `2024-01-15` | `"2024-01-15T00:00:00"` |
+| `!` | Literal text | `!null` | (any value) | `null` |
+| `?` | Boolean | `?A` | `TRUE` | `true` |
+| `~` | Empty string | `~A` | (empty) | `""` |
+
+### Key Differences in Prefix Behavior
+
+#### `?` - Boolean (Different Output)
+**SQL:**
+```excel
+=ExpandTemplateSql("?A, ?B")
+```
+Input: `A=TRUE`, `B=FALSE`  
+Output: `1, 0`
+
+**JSON:**
+```excel
+=ExpandTemplateJson("?A, ?B")
+```
+Input: `A=TRUE`, `B=FALSE`  
+Output: `true, false`
+
+#### `@` - Date/DateTime (Different Format)
+**SQL:**
+```excel
+=ExpandTemplateSql("@A")
+```
+Input: `A=2024-01-15 14:30:00`  
+Output: `'2024-01-15 14:30:00'`
+
+**JSON:**
+```excel
+=ExpandTemplateJson("@A")
+```
+Input: `A=2024-01-15 14:30:00`  
+Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
+
+#### `!` - Literal (Common JSON Use Case)
+**JSON keywords and values:**
+```excel
+=ExpandTemplateJson("!null")      → null
+=ExpandTemplateJson("!true")      → true
+=ExpandTemplateJson("!false")     → false
+=ExpandTemplateJson("!123.45")    → 123.45
+```
+
+## Complete Examples
+
+### Example 1: Simple JSON Object
+
+**Data:**
+| A (Name) | B (Age) | C (Email) |
+|----------|---------|-----------|
+| John | 25 | john@example.com |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""name"": $A, ""age"": B, ""email"": $C}")
+```
+
+**Output:**
+```json
+{"name": "John", "age": 25, "email": "john@example.com"}
+```
+
+### Example 2: JSON with Booleans
+
+**Data:**
+| A (Name) | B (Age) | C (Active) |
+|----------|---------|------------|
+| Alice | 25 | TRUE |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""name"": $A, ""age"": B, ""active"": ?C}")
+```
+
+**Output:**
+```json
+{"name": "Alice", "age": 25, "active": true}
+```
+
+### Example 3: JSON with Dates (ISO 8601)
+
+**Data:**
+| A (Event) | B (Date) | C (Priority) |
+|-----------|----------|--------------|
+| Meeting | 2024-03-15 14:30 | 1 |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""event"": $A, ""timestamp"": @B, ""priority"": C}")
+```
+
+**Output:**
+```json
+{"event": "Meeting", "timestamp": "2024-03-15T14:30:00", "priority": 1}
+```
+
+### Example 4: Handling NULLs and Special Characters
+
+**Data:**
+| A (Name) | B (Middle) | C (Note) |
+|----------|------------|----------|
+| O'Brien | (empty) | Path: C:\temp |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""name"": $A, ""middle"": $B, ""note"": $C}")
+```
+
+**Output:**
+```json
+{"name": "O'Brien", "middle": null, "note": "Path: C:\\temp"}
+```
+
+**Note:** Single quotes don't need escaping in JSON (unlike SQL).
+
+### Example 5: JSON Array of Values
+
+**Formula:**
+```excel
+=ExpandTemplateJson("[$A, B, $C]")
+```
+
+**Input:** `A=John`, `B=25`, `C=Developer`  
+**Output:**
+```json
+["John", 25, "Developer"]
+```
+
+### Example 6: Using Literal Values
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""id"": A, ""status"": !null, ""count"": !0}")
+```
+
+**Input:** `A=100`  
+**Output:**
+```json
+{"id": 100, "status": null, "count": 0}
+```
+
+### Example 7: Nested JSON Structure
+
+**Data:**
+| A (Name) | B (Street) | C (City) | D (Zip) |
+|----------|------------|----------|---------|
+| John | 123 Main | Boston | 02101 |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""name"": $A, ""address"": {""street"": $B, ""city"": $C, ""zip"": $D}}")
+```
+
+**Output:**
+```json
+{"name": "John", "address": {"street": "123 Main", "city": "Boston", "zip": "02101"}}
+```
+
+### Example 8: Escaping in JSON
+
+**Data:**
+| A (Text) | B (Path) |
+|----------|----------|
+| He said "Hello" | C:\Users\John |
+
+**Formula:**
+```excel
+=ExpandTemplateJson("{""quote"": $A, ""path"": $B}")
+```
+
+**Output:**
+```json
+{"quote": "He said \"Hello\"", "path": "C:\\Users\\John"}
+```
+
+## Batch Processing
+
+Use `ExpandTemplateRangeJson` for multiple rows:
+
+```excel
+=ExpandTemplateRangeJson("{""name"": $A, ""age"": B}", A2:A10)
+```
+
+Or with null handling:
+```excel
+=ExpandTemplateRangeJson("{""name"": $A, ""age"": B}", A2:A10, TRUE)
+```
+
+This returns an array of JSON objects (one per row).
+
+## Working with JSON Strings in Excel
+
+### Escaping Double Quotes in Formulas
+
+Excel requires doubling of quotes inside string literals:
+
+| What you want | Excel formula syntax |
+|---------------|----------------------|
+| `"name"` | `"""name"""` |
+| `{"key": "value"}` | `"{""key"": ""value""}"` |
+
+**Tip:** Build complex JSON templates in a cell first, then reference that cell:
+
+**Cell D1:**
+```
+{"name": $A, "age": B, "active": ?C}
+```
+
+**Cell E1:**
+```excel
+=ExpandTemplateJson(D1)
+```
+
+### Creating Multi-Line JSON (Pretty Print)
+
+Combine with `CHAR(10)` for newlines:
+
+```excel
+="{" & CHAR(10) & 
+  "  ""name"": " & ExpandTemplateJson("$A") & "," & CHAR(10) &
+  "  ""age"": " & ExpandTemplateJson("B") & CHAR(10) &
+  "}"
+```
+
+## Common Patterns
+
+### JSON Object from Row
+```excel
+=ExpandTemplateJson("{""id"": A, ""name"": $B, ""value"": C}")
+```
+
+### JSON Array Element
+```excel
+=ExpandTemplateJson("{""user"": $A, ""score"": B}")
+```
+Then combine multiple rows with commas and brackets.
+
+### Optional Fields (using literal null)
+```excel
+=ExpandTemplateJson("{""name"": $A, ""middle"": $B, ""last"": $C}")
+```
+Empty cells automatically become `null`.
+
+### Boolean Flags
+```excel
+=ExpandTemplateJson("{""active"": ?A, ""verified"": ?B}")
+```
+
+### Timestamps
+```excel
+=ExpandTemplateJson("{""created"": @A, ""updated"": @B}")
+```
+
+## Tips & Best Practices
+
+### 1. **Use Text Editor for Complex Templates**
+Build complex JSON templates in a text editor, then paste into Excel cell.
+
+### 2. **Validate Output JSON**
+Use online JSON validators to verify output format.
+
+### 3. **Watch for Trailing Commas**
+JSON doesn't allow trailing commas. Be careful when combining multiple rows:
+```
+{"name": "John"},
+{"name": "Jane"},  ← Remove this comma for last item
+```
+
+### 4. **Number Formatting**
+JSON numbers should not have quotes. Use auto-detect or `#` prefix for numeric values.
+
+### 5. **Date/Time Handling**
+JSON doesn't have a native date type. ISO 8601 format (`@` prefix) is the standard.
+
+### 6. **Unicode Characters**
+JSON supports Unicode. Control characters (0x00-0x1F) are automatically converted to `\uXXXX` format.
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `"true"` instead of `true` | String prefix used | Use `?` prefix, not `$` |
+| `"123"` instead of `123` | String prefix used | Remove `$` or use `#` |
+| Date shows as number | Auto-detect failed | Use `@` prefix |
+| Invalid JSON | Missing quotes on keys | Ensure `""key""` in template |
+| Unescaped quotes | Manual string building | Use `$` prefix for proper escaping |
+
+## Function Reference
+
+### ExpandTemplateJson
+```vba
+=ExpandTemplateJson(template, [nullForEmpty])
+```
+- **template**: JSON template string with column references
+- **nullForEmpty**: TRUE (default) = empty cells become `null`, FALSE = `""`
+
+### ExpandTemplateRangeJson
+```vba
+=ExpandTemplateRangeJson(template, rowRange, [nullForEmpty])
+```
+- **template**: JSON template string
+- **rowRange**: Range of rows to process
+- **nullForEmpty**: TRUE (default) = empty cells become `null`, FALSE = `""`
+
+## Installation
+
+Same as SQL version:
+1. Open Excel and press `Alt+F11` to open VBA Editor
+2. Insert → Module
+3. Paste the code from the JSON Template Expander
+4. Save as `.xlsm` (macro-enabled workbook)
+5. Use `=ExpandTemplateJson(...)` in any cell
+
+## JSON vs SQL Quick Reference
+
+| Feature | SQL Output | JSON Output |
+|---------|-----------|-------------|
+| String | `'text'` | `"text"` |
+| Number | `123` | `123` |
+| NULL | `NULL` | `null` |
+| Boolean | `1` / `0` | `true` / `false` |
+| Date | `'2024-01-15 14:30:00'` | `"2024-01-15T14:30:00"` |
+| Empty string | `''` | `""` |
+| Escape quote | `\'` | `\"` |
+| Single quote | `O\'Brien` | `O'Brien` (no escape) |
+
+For all other features (column references, named ranges, literal prefix, case sensitivity), refer to the SQL Template Expander guide - they work identically.
