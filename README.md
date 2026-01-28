@@ -27,6 +27,75 @@ Output: `'John', 25, 5.5`
 
 Output: `INSERT INTO users (name, age, score) VALUES ('John', 25, 5.5);`
 
+## **RECOMMENDED APPROACH: Template in Separate Cell**
+
+> **Best Practice:** Instead of embedding template strings directly in formulas, put your template in its own cell and reference that cell. This makes templates easier to read, edit, and maintain.
+
+### Why Use a Separate Template Cell?
+
+1. **Readability**: See both template and expanded output simultaneously
+2. **Easier Editing**: Modify template without dealing with Excel formula syntax
+3. **No Quote Escaping**: Avoid doubling quotes in formulas (especially critical for JSON)
+4. **Reusability**: Reference the same template from multiple locations
+5. **Documentation**: Template serves as self-documenting code
+
+### Example Pattern
+
+**Cell D1 (Template):**
+```
+!INSERT !INTO users (name, age, email) !VALUES ($A, B, $C);
+```
+
+**Cell E1 (Formula):**
+```excel
+=ExpandTemplate(D1)
+```
+
+**Output in E1:**
+```sql
+INSERT INTO users (name, age, email) VALUES ('John', 25, 'john@example.com');
+```
+
+Now you can see both the template pattern and the result, making debugging and verification much easier.
+
+## **EVEN BETTER: Use ExpandTemplateRange for Multiple Rows**
+
+> **Best Practice:** For processing multiple rows, use `ExpandTemplateRange` instead of copying formulas down. **You only define the template once**, and it processes all rows efficiently.
+
+### The Range Approach
+
+**Cell D1 (Template - Define Once):**
+```
+!INSERT !INTO users (name, age, email) !VALUES ($A, B, $C);
+```
+
+**Cell E2 (Single Formula for All Rows):**
+```excel
+=ExpandTemplateRange(D1, A2:A10)
+```
+
+This single formula:
+- Processes rows 2-10 automatically
+- Returns 9 INSERT statements
+- Only requires one template definition
+- No need to copy formula down
+
+**To use:**
+1. Put template in D1
+2. Select E2:E10 (9 cells for 9 rows)
+3. Type `=ExpandTemplateRange(D1, A2:A10)`
+4. Press `Ctrl+Shift+Enter` (array formula)
+
+**Result:** All 9 rows processed with one formula and one template!
+
+### Comparison of Approaches
+
+| Approach | Template Definitions | Formulas Needed | Ease of Editing |
+|----------|---------------------|-----------------|-----------------|
+| **Inline** | 100 (if 100 rows) | 100 | Hard - quotes, syntax |
+| **Cell Reference** | 1 template cell | 100 (copy down) | Medium - edit template |
+| **ExpandTemplateRange** ⭐ | 1 template cell | 1 (array formula) | **Easy - edit once** |
+
 ## Column Reference Case Sensitivity
 Column references in templates are **case-sensitive** and must always be **uppercase**.
 
@@ -62,9 +131,9 @@ Output:
 INSERT INTO log VALUES (5, 5a, a5)
 insert into log values (5, 5a, a5)
 ```
-This behavior is intentional and forms part of the template language’s parsing rules.
+This behavior is intentional and forms part of the template language's parsing rules.
 
-## Referencing Template Text in a separate cell
+## Referencing Template Text in a Separate Cell
 
 It can often be useful to have the Template source in one cell, with the ExpandTemplate function being invoked on it from a different cell. Using this pattern, you can see both Template and expanded text at the same time. 
 Taking the original example where cells are `A=John`, `B=25`, `C=5.5`  
@@ -303,6 +372,14 @@ This returns an array formula with 9 rows of INSERT statements.
 2. Type the formula
 3. Press `Ctrl+Shift+Enter` (array formula)
 
+**Or better yet, use a template cell:**
+1. Put template in D1: `INSERT INTO users VALUES ($A, B, C);`
+2. Select E2:E10
+3. Type `=ExpandTemplateRange(D1, A2:A10)`
+4. Press `Ctrl+Shift+Enter`
+
+Now you can edit the template in D1 and all outputs update automatically!
+
 ## Complete Examples
 
 ### Example 1: Simple User Insert using lower case commands
@@ -423,28 +500,40 @@ The space before `A` causes it to be replaced with the cell value, while `DEFAUL
 
 ## Tips & Best Practices
 
-### 1. **Test with Small Datasets First**
+### 1. **Always Use Template Cells**
+✅ **DO:** Put template in D1, use `=ExpandTemplate(D1)` in E1  
+❌ **DON'T:** Use `=ExpandTemplate("complex inline template...")`
+
+Benefits: Better readability, easier editing, no quote escaping headaches
+
+### 2. **Use ExpandTemplateRange for Multiple Rows**
+✅ **DO:** Define template once, use `=ExpandTemplateRange(D1, A2:A100)`  
+❌ **DON'T:** Copy `=ExpandTemplate(...)` down 100 rows
+
+Benefits: Single template definition, easier maintenance, cleaner spreadsheet
+
+### 3. **Test with Small Datasets First**
 Build your template on a few rows before applying to thousands.
 
-### 2. **Use Named Ranges for Clarity**
+### 4. **Use Named Ranges for Clarity**
 Instead of `A, B, C`, use `{FirstName}, {LastName}, {Email}`
 
-### 3. **Combine with Excel Formulas**
+### 5. **Combine with Excel Formulas**
 ```excel
-=ExpandTemplate("!INSERT !INTO users !VALUES ($A, B, @C);") & CHAR(10)
+=ExpandTemplate(D1) & CHAR(10)
 ```
 Adds a newline after each statement.
 
-### 4. **Watch for SQL Injection**
+### 6. **Watch for SQL Injection**
 This tool doesn't prevent SQL injection. Ensure source data is trusted or use parameterized queries in production.
 
-### 5. **Performance with Large Datasets**
+### 7. **Performance with Large Datasets**
 For thousands of rows, consider:
-- Using `ExpandTemplateRange` for batch processing 
+- Using `ExpandTemplateRange` for batch processing (recommended!)
 - Copying results to a new sheet
 - Running as a macro rather than live formulas
 
-### 6. **Database-Specific Syntax**
+### 8. **Database-Specific Syntax**
 Different databases have different requirements:
 - **MySQL** (default): Uses backslash escaping `\'`, `\"`
 - **SQL Server**: Use `"SQL"` escape style (doubles quotes: `''`)
@@ -452,10 +541,10 @@ Different databases have different requirements:
 
 Example:
 ```excel
-=ExpandTemplate("$A, B", TRUE, "SQL")  ' For SQL Server
+=ExpandTemplate(D1, TRUE, "SQL")  ' For SQL Server
 ```
 
-### 7. **Understanding the `!` Literal Prefix**
+### 9. **Understanding the `!` Literal Prefix**
 - Use `!` for SQL keywords and function names: `!NOW()`, `!DEFAULT`, `!CURRENT_TIMESTAMP`
 - Do NOT use `!A` expecting it to read cell A - it will output literal "A"
 - For mixing literals with values, use space separation: `!COALESCE( A, 0)` where A gets replaced
@@ -518,6 +607,62 @@ Output: `"name": "John", "age": 25, "score": 5.5`
 Output: `{"name": "John", "age": 25, "score": 5.5}`
 
 **Note:** In Excel formulas, double quotes inside strings must be doubled: `""` represents a single `"` character.
+
+## **CRITICAL FOR JSON: Always Use Template Cells!**
+
+> **JSON templates are especially painful to write inline** because of double-quote escaping. Every `"` must be written as `""` in Excel formulas. **Always put JSON templates in their own cells!**
+
+### The Problem with Inline JSON Templates
+
+**Inline (Hard to Read/Edit):**
+```excel
+=ExpandTemplateJson("{""user"": {""name"": $A, ""age"": B, ""active"": ?C}}")
+```
+
+**Template Cell Approach (Much Better):**
+
+**Cell D1:**
+```
+{"user": {"name": $A, "age": B, "active": ?C}}
+```
+
+**Cell E1:**
+```excel
+=ExpandTemplateJson(D1)
+```
+
+Notice: No quote doubling needed in D1! You can edit it like normal JSON.
+
+## **Best Practice: Use ExpandTemplateRangeJson**
+
+> **For JSON, the Range function is even more valuable** because JSON objects are often complex. Define your template once, process all rows efficiently.
+
+### Example: Generate JSON Array
+
+**Cell D1 (Template - Define Once):**
+```
+{"id": A, "name": $B, "email": $C, "active": ?D}
+```
+
+**Cell E1 (Add opening bracket):**
+```
+[
+```
+
+**Cell E2:E10 (Array Formula):**
+```excel
+=ExpandTemplateRangeJson(D1, A2:A10)
+```
+Press `Ctrl+Shift+Enter`
+
+**Cell E11 (Add closing bracket):**
+```
+]
+```
+
+**Result:** Valid JSON array with all 9 objects!
+
+You can then add commas between objects using a helper column or formula.
 
 ## Key Differences from SQL Version
 
@@ -630,16 +775,21 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 
 ## Complete Examples
 
-### Example 1: Simple JSON Object
+### Example 1: Simple JSON Object (Using Template Cell)
 
 **Data:**
 | A (Name) | B (Age) | C (Email) |
 |----------|---------|-----------|
 | John | 25 | john@example.com |
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"name": $A, "age": B, "email": $C}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""name"": $A, ""age"": B, ""email"": $C}")
+=ExpandTemplateJson(D1)
 ```
 
 **Output:**
@@ -654,9 +804,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 |----------|---------|------------|
 | Alice | 25 | TRUE |
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"name": $A, "age": B, "active": ?C}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""name"": $A, ""age"": B, ""active"": ?C}")
+=ExpandTemplateJson(D1)
 ```
 
 **Output:**
@@ -671,9 +826,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 |-----------|----------|--------------|
 | Meeting | 2024-03-15 14:30 | 1 |
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"event": $A, "timestamp": @B, "priority": C}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""event"": $A, ""timestamp"": @B, ""priority"": C}")
+=ExpandTemplateJson(D1)
 ```
 
 **Output:**
@@ -688,9 +848,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 |----------|------------|----------|
 | O'Brien | (empty) | Path: C:\temp |
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"name": $A, "middle": $B, "note": $C}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""name"": $A, ""middle"": $B, ""note"": $C}")
+=ExpandTemplateJson(D1)
 ```
 
 **Output:**
@@ -702,9 +867,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 
 ### Example 5: JSON Array of Values
 
-**Formula:**
+**Cell D1 (Template):**
+```
+[$A, B, $C]
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("[$A, B, $C]")
+=ExpandTemplateJson(D1)
 ```
 
 **Input:** `A=John`, `B=25`, `C=Developer`  
@@ -715,9 +885,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 
 ### Example 6: Using Literal Values
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"id": A, "status": !null, "count": !0}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""id"": A, ""status"": !null, ""count"": !0}")
+=ExpandTemplateJson(D1)
 ```
 
 **Input:** `A=100`  
@@ -733,9 +908,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 |----------|------------|----------|---------|
 | John | 123 Main | Boston | 02101 |
 
-**Formula:**
+**Cell E1 (Template):**
+```
+{"name": $A, "address": {"street": $B, "city": $C, "zip": $D}}
+```
+
+**Cell F1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""name"": $A, ""address"": {""street"": $B, ""city"": $C, ""zip"": $D}}")
+=ExpandTemplateJson(E1)
 ```
 
 **Output:**
@@ -750,9 +930,14 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 |----------|----------|
 | He said "Hello" | C:\Users\John |
 
-**Formula:**
+**Cell D1 (Template):**
+```
+{"quote": $A, "path": $B}
+```
+
+**Cell E1 (Formula):**
 ```excel
-=ExpandTemplateJson("{""quote"": $A, ""path"": $B}")
+=ExpandTemplateJson(D1)
 ```
 
 **Output:**
@@ -764,20 +949,28 @@ Output: `"2024-01-15T14:30:00"` (ISO 8601 with T)
 
 Use `ExpandTemplateRangeJson` for multiple rows:
 
+**Cell D1 (Template):**
+```
+{"name": $A, "age": B}
+```
+
+**Cell E2:E10 (Array Formula):**
 ```excel
-=ExpandTemplateRangeJson("{""name"": $A, ""age"": B}", A2:A10)
+=ExpandTemplateRangeJson(D1, A2:A10)
 ```
 
 Or with null handling:
 ```excel
-=ExpandTemplateRangeJson("{""name"": $A, ""age"": B}", A2:A10, TRUE)
+=ExpandTemplateRangeJson(D1, A2:A10, TRUE)
 ```
 
 This returns an array of JSON objects (one per row).
 
+**Remember:** Press `Ctrl+Shift+Enter` for array formulas!
+
 ## Working with JSON Strings in Excel
 
-### Escaping Double Quotes in Formulas
+### Why Template Cells Are Essential for JSON
 
 Excel requires doubling of quotes inside string literals:
 
@@ -786,9 +979,11 @@ Excel requires doubling of quotes inside string literals:
 | `"name"` | `"""name"""` |
 | `{"key": "value"}` | `"{""key"": ""value""}"` |
 
-**Tip:** Build complex JSON templates in a cell first, then reference that cell:
+This makes inline JSON templates extremely difficult to read and edit.
 
-**Cell D1:**
+**Solution:** Always use template cells for JSON!
+
+**Cell D1 (No quote doubling!):**
 ```
 {"name": $A, "age": B, "active": ?C}
 ```
@@ -802,65 +997,86 @@ Excel requires doubling of quotes inside string literals:
 
 Combine with `CHAR(10)` for newlines:
 
+**Cell D1:**
+```
+{"name": $A, "age": B}
+```
+
 ```excel
 ="{" & CHAR(10) & 
-  "  ""name"": " & ExpandTemplateJson("$A") & "," & CHAR(10) &
-  "  ""age"": " & ExpandTemplateJson("B") & CHAR(10) &
+  "  " & ExpandTemplateJson(D1) & CHAR(10) &
   "}"
 ```
 
 ## Common Patterns
 
-### JSON Object from Row
-```excel
-=ExpandTemplateJson("{""id"": A, ""name"": $B, ""value"": C}")
+### JSON Object from Row (Using Template Cell)
+**Cell D1:**
+```
+{"id": A, "name": $B, "value": C}
 ```
 
 ### JSON Array Element
-```excel
-=ExpandTemplateJson("{""user"": $A, ""score"": B}")
+**Cell D1:**
+```
+{"user": $A, "score": B}
 ```
 Then combine multiple rows with commas and brackets.
 
 ### Optional Fields (using literal null)
-```excel
-=ExpandTemplateJson("{""name"": $A, ""middle"": $B, ""last"": $C}")
+**Cell D1:**
+```
+{"name": $A, "middle": $B, "last": $C}
 ```
 Empty cells automatically become `null`.
 
 ### Boolean Flags
-```excel
-=ExpandTemplateJson("{""active"": ?A, ""verified"": ?B}")
+**Cell D1:**
+```
+{"active": ?A, "verified": ?B}
 ```
 
 ### Timestamps
-```excel
-=ExpandTemplateJson("{""created"": @A, ""updated"": @B}")
+**Cell D1:**
+```
+{"created": @A, "updated": @B}
 ```
 
 ## Tips & Best Practices
 
-### 1. **Use Text Editor for Complex Templates**
-Build complex JSON templates in a text editor, then paste into Excel cell.
+### 1. **ALWAYS Use Template Cells for JSON**
+✅ **DO:** Put JSON template in D1, use `=ExpandTemplateJson(D1)`  
+❌ **DON'T:** Embed JSON in formula with doubled quotes `""`
 
-### 2. **Validate Output JSON**
+This is the #1 best practice for JSON!
+
+### 2. **Use ExpandTemplateRangeJson for Arrays**
+✅ **DO:** Define template once, use `=ExpandTemplateRangeJson(D1, A2:A100)`  
+❌ **DON'T:** Copy formula down 100 times
+
+Benefits: Clean JSON array generation, single template edit point
+
+### 3. **Validate Output JSON**
 Use online JSON validators to verify output format.
 
-### 3. **Watch for Trailing Commas**
+### 4. **Watch for Trailing Commas**
 JSON doesn't allow trailing commas. Be careful when combining multiple rows:
 ```
 {"name": "John"},
 {"name": "Jane"},  ← Remove this comma for last item
 ```
 
-### 4. **Number Formatting**
+### 5. **Number Formatting**
 JSON numbers should not have quotes. Use auto-detect or `#` prefix for numeric values.
 
-### 5. **Date/Time Handling**
+### 6. **Date/Time Handling**
 JSON doesn't have a native date type. ISO 8601 format (`@` prefix) is the standard.
 
-### 6. **Unicode Characters**
+### 7. **Unicode Characters**
 JSON supports Unicode. Control characters (0x00-0x1F) are automatically converted to `\uXXXX` format.
+
+### 8. **Build Complex JSON in Stages**
+For deeply nested JSON, build inner objects first in separate cells, then combine.
 
 ## Troubleshooting
 
@@ -869,8 +1085,9 @@ JSON supports Unicode. Control characters (0x00-0x1F) are automatically converte
 | `"true"` instead of `true` | String prefix used | Use `?` prefix, not `$` |
 | `"123"` instead of `123` | String prefix used | Remove `$` or use `#` |
 | Date shows as number | Auto-detect failed | Use `@` prefix |
-| Invalid JSON | Missing quotes on keys | Ensure `""key""` in template |
+| Invalid JSON | Missing quotes on keys | Ensure keys have quotes in template |
 | Unescaped quotes | Manual string building | Use `$` prefix for proper escaping |
+| Quote escaping nightmare | Template in formula | **Use template cell instead!** |
 
 ## Function Reference
 
@@ -878,14 +1095,14 @@ JSON supports Unicode. Control characters (0x00-0x1F) are automatically converte
 ```vba
 =ExpandTemplateJson(template, [nullForEmpty])
 ```
-- **template**: JSON template string with column references
+- **template**: JSON template string with column references (or cell reference to template)
 - **nullForEmpty**: TRUE (default) = empty cells become `null`, FALSE = `""`
 
 ### ExpandTemplateRangeJson
 ```vba
 =ExpandTemplateRangeJson(template, rowRange, [nullForEmpty])
 ```
-- **template**: JSON template string
+- **template**: JSON template string (or cell reference to template)
 - **rowRange**: Range of rows to process
 - **nullForEmpty**: TRUE (default) = empty cells become `null`, FALSE = `""`
 
@@ -912,3 +1129,17 @@ Same as SQL version:
 | Single quote | `O\'Brien` | `O'Brien` (no escape) |
 
 For all other features (column references, named ranges, literal prefix, case sensitivity), refer to the SQL Template Expander guide - they work identically.
+
+## Summary of Best Practices
+
+### For Both SQL and JSON:
+1. ✅ **Put templates in separate cells** - easier to read and edit
+2. ✅ **Use ExpandTemplateRange functions** - define template once for all rows
+3. ✅ **Test on small datasets first** - verify template before scaling up
+
+### Especially for JSON:
+1. ✅ **ALWAYS use template cells** - avoid quote-doubling hell
+2. ✅ **Use ExpandTemplateRangeJson for arrays** - cleaner array generation
+3. ✅ **Validate output with JSON validator** - ensure valid JSON
+
+These practices make template management much easier and your spreadsheets more maintainable!
